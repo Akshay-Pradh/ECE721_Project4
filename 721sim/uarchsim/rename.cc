@@ -194,3 +194,23 @@ void pipeline_t::rename2() {
       DISPATCH[i].branch_mask = RENAME2[i].branch_mask;
    }
 }
+
+// This function checks value-prediction eligibility.
+// predINTALU, predFPALU and predLOAD are all "bool" types
+// and are configured to be true or false based on corresponding
+// simulator arguments being 1 or 0, respectively.
+
+bool pipeline_t::eligible(payload_t *pay) {
+   if (!pay->C_valid)
+      return false;        // Any instructionn without a destination register is ineligible.
+
+   // If we reached this point, the instruction has a destination register.
+   if (IS_INTALU(pay->flags))
+      return (predINTALU); // instr. is INTALU type. It is eligible if predINTALU is configured "true".
+   else if (IS_FPALU(pay->flags))
+      return (predFPALU);  // instr. is FPALU type. It is eligible if predFPALU is configured "true".
+   else if (IS_LOAD(pay->flags) && !IS_AMO(pay->flags))
+      return (predLOAD);   // instr. is a normal LOAD (not rare load-with-reserv). It is eligible if predLOAD is configured "true".
+   else
+      return false;        // instr. is none of the above major types, so it is never eligible
+}

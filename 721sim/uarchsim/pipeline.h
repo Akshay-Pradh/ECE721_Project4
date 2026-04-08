@@ -80,6 +80,9 @@
 #define IS_AMO(flags) ((flags) & (F_AMO))
 #define IS_CSR(flags) ((flags) & (F_CSR))
 
+#define IS_INTALU(flags) ((flags) & (F_ICOMP))     // integer ALU instructions
+#define IS_FPALU(flags)  ((flags) & (F_FCOMP))      // floating-point ALU instructions
+
 //////////////////////////////////////////////////////////////////////////////
 
 #define SOURCE1(in) (in.rs1())
@@ -356,6 +359,13 @@ private:
    CacheClass *L2C;
    CacheClass *L3C;
 
+   /////////////////////////////////////////////////////////////
+   // Value Prediction Configuration
+   /////////////////////////////////////////////////////////////
+   bool predINTALU;   // predict integer ALU instructions
+   bool predFPALU;    // predict floating-point ALU instructions
+   bool predLOAD;     // predict load instructions
+
    //////////////////////
    // PRIVATE FUNCTIONS
    //////////////////////
@@ -374,6 +384,9 @@ private:
 
    bool execute_amo();
    bool execute_csr();
+
+   // Function to determine eligibility of instr for value prediction
+   bool eligible(payload_t *pay);
 
    void split(uint64_t index);
 
