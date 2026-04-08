@@ -184,6 +184,11 @@ typedef struct {
                            // this is the branch's ID (its bit position
                            // in the Global Branch Mask).
 
+   // Value Prediction fields
+   bool vp_eligible;
+   bool vp_predicted;
+   uint64_t vp_value;
+
    ////////////////////////
    // Set by Dispatch Stage.
    ////////////////////////

@@ -80,7 +80,7 @@
 #define IS_AMO(flags) ((flags) & (F_AMO))
 #define IS_CSR(flags) ((flags) & (F_CSR))
 
-#define IS_INTALU(flags) ((flags) & (F_ICOMP))     // integer ALU instructions
+#define IS_INTALU(flags) ((flags) & (F_ICOMP))      // integer ALU instructions
 #define IS_FPALU(flags)  ((flags) & (F_FCOMP))      // floating-point ALU instructions
 
 //////////////////////////////////////////////////////////////////////////////
@@ -362,9 +362,10 @@ private:
    /////////////////////////////////////////////////////////////
    // Value Prediction Configuration
    /////////////////////////////////////////////////////////////
-   bool predINTALU;   // predict integer ALU instructions
-   bool predFPALU;    // predict floating-point ALU instructions
-   bool predLOAD;     // predict load instructions
+   bool predINTALU;           // predict integer ALU instructions
+   bool predFPALU;            // predict floating-point ALU instructions
+   bool predLOAD;             // predict load instructions
+   bool vp_perfect = true;    // mode select for Perfect Value Prediction
 
    //////////////////////
    // PRIVATE FUNCTIONS

@@ -149,6 +149,18 @@ void pipeline_t::rename2() {
       }
       // FIX_ME #3 END
 
+      // Check if instr. is VP eligible
+      PAY.buf[index].vp_eligible = eligible(&PAY.buf[index]);
+
+      // Check if we are using Perfect VP
+      if (PAY.buf[index].vp_eligible && vp_perfect) {
+         if (PAY.buf[index].good_instruction && PAY.buf[i].db_index != DEBUG_INDEX_INVALID) {
+            db_t *actual = pipe->peek(PAY.buf[i].db_index);
+            PAY.buf[index].vp_predicted = true;
+            PAY.buf[index].vp_value = actual->a_rdst[0].value;
+         }
+      }
+
       // FIX_ME #4
       // Get the instruction's branch mask.
       //
