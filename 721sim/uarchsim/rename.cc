@@ -152,13 +152,24 @@ void pipeline_t::rename2() {
       // Check if instr. is VP eligible
       PAY.buf[index].vp_eligible = eligible(&PAY.buf[index]);
 
+      // std::cout << "[VP Debug] PC=0x" << std::hex << PAY.buf[index].pc
+      //     << " vp_eligible=" << PAY.buf[index].vp_eligible
+      //     << " good_instruction=" << PAY.buf[index].good_instruction
+      //     << " db_index=" << PAY.buf[index].db_index
+      //     << std::endl;
+
+      // Reset VP flags by default
+      PAY.buf[index].vp_predicted = false;
+      PAY.buf[index].vp_confident = false;
+
       // Check if we are using Perfect VP
-      if (PAY.buf[index].vp_eligible && vp_perfect) {
-         if (PAY.buf[index].good_instruction && PAY.buf[i].db_index != DEBUG_INDEX_INVALID) {
-            db_t *actual = pipe->peek(PAY.buf[i].db_index);
+      if (PAY.buf[index].vp_eligible && VP_PERFECT) {
+         if (PAY.buf[index].good_instruction && PAY.buf[index].db_index != DEBUG_INDEX_INVALID) {
+            db_t *actual = pipe->peek(PAY.buf[index].db_index);
             PAY.buf[index].vp_predicted = true;
+            PAY.buf[index].vp_confident = true;
             PAY.buf[index].vp_value = actual->a_rdst[0].value;
-         }
+         } 
       }
 
       // FIX_ME #4
@@ -214,7 +225,7 @@ void pipeline_t::rename2() {
 
 bool pipeline_t::eligible(payload_t *pay) {
    if (!pay->C_valid)
-      return false;        // Any instructionn without a destination register is ineligible.
+      return false;        // Any instruction without a destination register is ineligible.
 
    // If we reached this point, the instruction has a destination register.
    if (IS_INTALU(pay->flags))

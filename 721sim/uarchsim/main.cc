@@ -233,6 +233,19 @@ static void set_mdp_flags(const char *config) {
    }
 }
 
+// Parser function for Value Prediction
+static void set_vp_eligible(const char *config) {
+   uint64_t VP_PRED_INTALU, VP_PRED_FPALU, VP_PRED_LOAD;
+   if (sscanf(config, "%lu,%lu,%lu", &VP_PRED_INTALU, &VP_PRED_FPALU, &VP_PRED_LOAD) != 3) {
+      fprintf(stderr, "Incorrect usage of --vp-eligible=<predINTALU>,<predFPALU>,<predLOAD>\n");
+      exit(-1);
+   }
+   else {
+      predINTALU = (VP_PRED_INTALU ? true : false);
+      predFPALU = (VP_PRED_FPALU ? true : false);
+      predLOAD = (VP_PRED_LOAD ? true : false);
+   }
+}
 
 static void set_store_set_flags(const char *config) {
    uint64_t ssit_size, lfst_size, clear_period;
@@ -424,6 +437,11 @@ int main(int argc, char **argv) {
    parser.option(0, "L2L3exist", 1, [&](const char *s) { config_L2L3present(s); });
    parser.option(0, "MEMLAT", 1, [&](const char *s) { L1_IC_MISS_LATENCY = L1_DC_MISS_LATENCY = L2_MISS_LATENCY = atoi(s); });
    parser.option(0, "perf", 1, [&](const char *s) { set_perfect_flags(s); });
+
+   // Value Prediction parsing
+   parser.option(0, "vp-eligible", 1, [&](const char *s) { set_vp_eligible(s); });
+   parser.option(0, "vp-perf", 1, [&](const char *s) { VP_PERFECT = (atoi(s) ? true : false); });
+
    parser.option(0, "cp", 1, [&](const char *s) { NUM_CHECKPOINTS = atoi(s); });
 
    parser.option(0, "bq", 1, [&](const char *s) {BQ_SIZE = atoi(s); AUTO_BQ_SIZE = false; });

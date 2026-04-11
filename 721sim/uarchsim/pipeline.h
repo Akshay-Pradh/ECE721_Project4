@@ -359,14 +359,6 @@ private:
    CacheClass *L2C;
    CacheClass *L3C;
 
-   /////////////////////////////////////////////////////////////
-   // Value Prediction Configuration
-   /////////////////////////////////////////////////////////////
-   bool predINTALU;           // predict integer ALU instructions
-   bool predFPALU;            // predict floating-point ALU instructions
-   bool predLOAD;             // predict load instructions
-   bool vp_perfect = true;    // mode select for Perfect Value Prediction
-
    //////////////////////
    // PRIVATE FUNCTIONS
    //////////////////////

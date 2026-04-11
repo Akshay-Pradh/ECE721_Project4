@@ -14,6 +14,12 @@ extern bool ORACLE_DISAMBIG;
 extern bool PERFECT_ICACHE;
 extern bool PERFECT_DCACHE;
 
+// Value Prediction Configuration
+extern bool VP_PERFECT;
+extern bool predINTALU;           // predict integer ALU instructions
+extern bool predFPALU;            // predict floating-point ALU instructions
+extern bool predLOAD;             // predict load instructions
+
 // MDP
 extern uint64_t SSIT_SIZE;
 extern uint64_t LFST_SIZE;

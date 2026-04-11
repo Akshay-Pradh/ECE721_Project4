@@ -13,6 +13,13 @@ bool ORACLE_DISAMBIG = false;
 bool PERFECT_ICACHE = false;
 bool PERFECT_DCACHE = false;
 
+// Value Prediction.
+bool VP_PERFECT = false;
+bool predINTALU = false;           // predict integer ALU instructions
+bool predFPALU = false;            // predict floating-point ALU instructions
+bool predLOAD = false;             // predict load instructions
+
+
 // MDP
 uint64_t SSIT_SIZE = 4096;
 uint64_t LFST_SIZE = 1024;

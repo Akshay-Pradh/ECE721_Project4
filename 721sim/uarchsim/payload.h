@@ -187,6 +187,7 @@ typedef struct {
    // Value Prediction fields
    bool vp_eligible;
    bool vp_predicted;
+   bool vp_confident;
    uint64_t vp_value;
 
    ////////////////////////
