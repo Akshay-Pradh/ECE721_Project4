@@ -190,6 +190,8 @@ typedef struct {
    bool vp_confident;
    uint64_t vp_value;
 
+   uint64_t vpq_index;     //  maybe? 
+
    ////////////////////////
    // Set by Dispatch Stage.
    ////////////////////////
