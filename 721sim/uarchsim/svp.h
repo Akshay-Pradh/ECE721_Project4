@@ -57,8 +57,8 @@ public:
     vpq_entry vpq_pop_head();
 
     // If SVP tag hit, train SVP entry, use value, decrement instance counter
-    void train_svp(uint64_t index, uint64_t value);
+    void train_svp(uint64_t value);
 
     // If SVP tag miss, replace entry
-    void install_svp(uint64_t index, uint64_t tag, uint64_t value);
+    void install_svp(uint64_t tag, uint64_t value);
 };

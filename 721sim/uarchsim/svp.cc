@@ -58,19 +58,19 @@ uint64_t SVP_VPQ::vpq_allocate(uint64_t index, uint64_t tag) {
 }
 
 // Deposit value in VPQ in Writeback
-void desposit(uint64_t entry, uint64_t val){
+void SVP_VPQ::desposit(uint64_t entry, uint64_t val){
     VPQ[entry].value = val;
 }
 
 // Pop VPQ head, return entry PC
- vpq_entry vpq_pop_head(){
+ vpq_entry SVP_VPQ::vpq_pop_head(){
     vpq_entry entry = VPQ[vpq_head];
     vpq_head = (vpq_head + 1) % VPQ.size();
     return entry;
  }
 
     // If SVP tag hit, train SVP entry, use value, decrement instance counter
-void train_svp(uint64_t value){
+void SVP_VPQ::train_svp(uint64_t value){
     vpq_entry head = vpq_pop_head();
     auto &entry = SVP[head.PC_index];
 
@@ -94,8 +94,8 @@ void train_svp(uint64_t value){
     entry.inst--;
 }
 
-    // If SVP tag miss, replace entry
-void install_svp(uint64_t tag, uint64_t value){
+// If SVP tag miss, replace entry
+void SVP_VPQ::install_svp(uint64_t tag, uint64_t value){
     vpq_entry head = vpq_pop_head();
     auto &entry = SVP[head.PC_index];
 
@@ -108,17 +108,4 @@ void install_svp(uint64_t tag, uint64_t value){
     entry.stride = 0;
     entry.confidence = 0;
     entry.inst = 0;
-}
-
-
-// Deposit value in VPQ in Writeback
-void SVP_VPQ::desposit(uint64_t entry, uint64_t val) {
-    VPQ[entry].value = val;
-}
-
-// Pop VPQ head, return entry PC
-vpq_entry SVP_VPQ::vpq_pop_head() {
-    vpq_entry entry = VPQ[vpq_head];
-    vpq_head = (vpq_head + 1) % VPQ.size();
-    return entry;
 }
