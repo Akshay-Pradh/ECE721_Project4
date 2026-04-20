@@ -40,13 +40,12 @@ void SVP_VPQ::svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, int64_
     else {
         instr->vp_confident = (entry.confidence == conf_max);
     }
-    instr->vp_confident = (entry.confidence == conf_max);
 
     // Increment instance count
     entry.inst++;
 }
 
-// Deposit value in VPQ in Writeback
+// Allocate entry in VPQ, returns entry number
 uint64_t SVP_VPQ::vpq_allocate(uint64_t index, uint64_t tag) {
     uint64_t idx = vpq_tail;
 
@@ -56,4 +55,16 @@ uint64_t SVP_VPQ::vpq_allocate(uint64_t index, uint64_t tag) {
     vpq_tail = (vpq_tail + 1) % VPQ.size();
 
     return idx;
+}
+
+// Deposit value in VPQ in Writeback
+void SVP_VPQ::desposit(uint64_t entry, uint64_t val) {
+    VPQ[entry].value = val;
+}
+
+// Pop VPQ head, return entry PC
+vpq_entry SVP_VPQ::vpq_pop_head() {
+    vpq_entry entry = VPQ[vpq_head];
+    vpq_head = (vpq_head + 1) % VPQ.size();
+    return entry;
 }
