@@ -36,10 +36,17 @@ private:
     // Other private variables
     uint64_t conf_max;
     uint64_t tag_bits;
+    uint64_t index_bits;
 
 public:
     // constructor
     SVP_VPQ(uint64_t vpq_size, uint64_t index_bits, uint64_t tag_bits, uint64_t conf);
+
+    // Return index from PC 
+    uint64_t get_index(uint64_t PC);
+
+    // Return tag from PC
+    uint64_t get_tag(uint64_t PC);
 
     // Search SVP for tag
     bool search_svp(uint64_t PC_index, uint64_t tag);
@@ -51,14 +58,14 @@ public:
     uint64_t vpq_allocate(uint64_t index, uint64_t tag);
 
     // Deposit value in VPQ in Writeback
-    void desposit(uint64_t entry, uint64_t val);
+    void deposit(uint64_t entry, uint64_t val);
 
     // Pop VPQ head, return entry PC
     vpq_entry vpq_pop_head();
 
     // If SVP tag hit, train SVP entry, use value, decrement instance counter
-    void train_svp(uint64_t value);
+    void train_svp(uint64_t value, uint64_t index);
 
     // If SVP tag miss, replace entry
-    void install_svp(uint64_t tag, uint64_t value);
+    void install_svp(uint64_t tag, uint64_t value, uint64_t index);
 };

@@ -32,6 +32,8 @@
 
 #include "renamer.h"           // REGISTER RENAMER + REGISTER FILE
 
+#include "svp.h"
+
 #include "lane.h"              // EXECUTION LANES
 
 #include "issue_queue.h"       // ISSUE QUEUE
@@ -325,6 +327,9 @@ private:
    // Register renaming modules.
    /////////////////////////////////////////////////////////////
    renamer *REN;
+
+   // SVP + VPQ object
+   SVP_VPQ *SVP;
 
    /////////////////////////////////////////////////////////////
    // Memory Dependency Prediction

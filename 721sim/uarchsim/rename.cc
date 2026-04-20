@@ -1,6 +1,5 @@
 #include "pipeline.h"
 
-
 ////////////////////////////////////////////////////////////////////////////////////
 // The Rename Stage has two sub-stages:
 // rename1: Get the next rename bundle from the FQ.
@@ -162,14 +161,31 @@ void pipeline_t::rename2() {
       PAY.buf[index].vp_predicted = false;
       PAY.buf[index].vp_confident = false;
 
-      // Check if we are using Perfect VP
-      if (PAY.buf[index].vp_eligible && VP_PERFECT) {
-         if (PAY.buf[index].good_instruction && PAY.buf[index].db_index != DEBUG_INDEX_INVALID) {
-            db_t *actual = pipe->peek(PAY.buf[index].db_index);
-            PAY.buf[index].vp_predicted = true;
-            PAY.buf[index].vp_confident = true;
-            PAY.buf[index].vp_value = actual->a_rdst[0].value;
-         } 
+      // Check if instruction is VP eligible
+      if (PAY.buf[index].vp_eligible) {
+         // Check if we are using Perfect VP
+         if (VP_PERFECT) {
+            if (PAY.buf[index].good_instruction && PAY.buf[index].db_index != DEBUG_INDEX_INVALID) {
+               db_t *actual = pipe->peek(PAY.buf[index].db_index);
+               PAY.buf[index].vp_predicted = true;
+               PAY.buf[index].vp_confident = true;
+               PAY.buf[index].vp_value = actual->a_rdst[0].value;
+            } 
+         }
+         else {
+            uint64_t tag = SVP->get_tag(PAY.buf[index].pc);
+            uint64_t index = SVP->get_index(PAY.buf[index].pc);
+
+            if (SVP->search_svp(index, tag)) {
+               db_t *actual;
+               if (PAY.buf[index].good_instruction && PAY.buf[index].db_index != DEBUG_INDEX_INVALID) {
+                  actual = pipe->peek(PAY.buf[index].db_index);
+               }          
+               SVP->svp_hit(&PAY.buf[index], index, ORACLE_CONF, actual->a_rdst[0].value);
+            }
+            // Allocate VPQ tail entry + dyn instr carries VPQ entry number
+            PAY.buf[index].vpq_index = SVP->vpq_allocate(index, tag);
+         }
       }
 
       // FIX_ME #4

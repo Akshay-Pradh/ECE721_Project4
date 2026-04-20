@@ -5,7 +5,7 @@
 
 // Constructor definition
 SVP_VPQ::SVP_VPQ(uint64_t vpq_size, uint64_t index_bits, uint64_t tag_bits, uint64_t conf) 
-    : SVP(1 << index_bits), VPQ(vpq_size), vpq_head{0}, vpq_tail{0}, tag_bits{tag_bits}, conf_max{conf} {
+    : SVP(1 << index_bits), VPQ(vpq_size), vpq_head{0}, vpq_tail{0}, tag_bits{tag_bits}, conf_max{conf}, index_bits{index_bits} {
         // Initialize all SVP entries
         for (auto &entry: SVP) {
             entry.confidence = 0;
@@ -14,7 +14,26 @@ SVP_VPQ::SVP_VPQ(uint64_t vpq_size, uint64_t index_bits, uint64_t tag_bits, uint
             entry.ret_val = 0;
             entry.tag = 0;
         }
-    }
+}
+
+uint64_t SVP_VPQ::get_index(uint64_t PC) {
+    PC = PC >> 2;       // get rid of 0's
+
+    uint64_t index_mask = (1ULL << index_bits) - 1;
+    uint64_t index = PC & index_mask;
+
+    return index;
+}
+
+uint64_t SVP_VPQ::get_tag(uint64_t PC) {
+    PC = PC >> 2;           // get rid of 0's
+    PC = PC >> index_bits;  // shift out the index
+
+    uint64_t tag_mask = (1ULL << tag_bits) - 1;
+    uint64_t tag = PC & tag_mask;
+
+    return tag;
+}
 
 // Search SVP function, if tag match
 bool SVP_VPQ::search_svp(uint64_t PC_index, uint64_t tag) {
@@ -58,7 +77,7 @@ uint64_t SVP_VPQ::vpq_allocate(uint64_t index, uint64_t tag) {
 }
 
 // Deposit value in VPQ in Writeback
-void SVP_VPQ::desposit(uint64_t entry, uint64_t val){
+void SVP_VPQ::deposit(uint64_t entry, uint64_t val){
     VPQ[entry].value = val;
 }
 
@@ -70,9 +89,9 @@ void SVP_VPQ::desposit(uint64_t entry, uint64_t val){
  }
 
     // If SVP tag hit, train SVP entry, use value, decrement instance counter
-void SVP_VPQ::train_svp(uint64_t value){
-    vpq_entry head = vpq_pop_head();
-    auto &entry = SVP[head.PC_index];
+void SVP_VPQ::train_svp(uint64_t value, uint64_t index){
+    // Tag hit so entry is straight from SVP
+    auto &entry = SVP[index];
 
     // Calculate new delta (stride)
     int64_t new_stride = (int64_t)value - (int64_t)entry.ret_val;
@@ -95,12 +114,12 @@ void SVP_VPQ::train_svp(uint64_t value){
 }
 
 // If SVP tag miss, replace entry
-void SVP_VPQ::install_svp(uint64_t tag, uint64_t value){
-    vpq_entry head = vpq_pop_head();
-    auto &entry = SVP[head.PC_index];
+void SVP_VPQ::install_svp(uint64_t tag, uint64_t value, uint64_t index){
+
+    auto &entry = SVP[index];
 
     // Safety assert to ensure actually misses
-    assert(head.PC_tag != entry.tag);
+    assert(tag != entry.tag);
 
     // Overwrite entry with new tag and value
     entry.tag = tag;
