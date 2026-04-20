@@ -18,6 +18,7 @@ bool VP_PERFECT = false;
 bool predINTALU = false;           // predict integer ALU instructions
 bool predFPALU = false;            // predict floating-point ALU instructions
 bool predLOAD = false;             // predict load instructions
+bool ORACLE_CONF = false;          // oracle confidence mode for VP
 
 
 // MDP

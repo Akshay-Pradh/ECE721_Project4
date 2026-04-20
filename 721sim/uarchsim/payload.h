@@ -189,8 +189,7 @@ typedef struct {
    bool vp_predicted;
    bool vp_confident;
    uint64_t vp_value;
-
-   uint64_t vpq_index;     //  maybe? 
+   uint64_t vpq_index;
 
    ////////////////////////
    // Set by Dispatch Stage.
