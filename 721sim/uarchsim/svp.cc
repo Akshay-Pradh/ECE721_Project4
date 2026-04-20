@@ -57,3 +57,57 @@ uint64_t SVP_VPQ::vpq_allocate(uint64_t index, uint64_t tag) {
 
     return idx;
 }
+
+// Deposit value in VPQ in Writeback
+void desposit(uint64_t entry, uint64_t val){
+    VPQ[entry].value = val;
+}
+
+// Pop VPQ head, return entry PC
+ vpq_entry vpq_pop_head(){
+    vpq_entry entry = VPQ[vpq_head];
+    vpq_head = (vpq_head + 1) % VPQ.size();
+    return entry;
+ }
+
+    // If SVP tag hit, train SVP entry, use value, decrement instance counter
+void train_svp(uint64_t value){
+    vpq_entry head = vpq_pop_head();
+    auto &entry = SVP[head.PC_index];
+
+    // Calculate new delta (stride)
+    int64_t new_stride = (int64_t)value - (int64_t)entry.ret_val;
+
+    // Update confidence based on if new delta is the same as the last
+    if (new_stride == entry.stride) {
+        // If delta matches, increment confidence (saturate at max)
+        if (entry.confidence < conf_max) {
+            entry.confidence++;
+        }
+    } else {
+        // Stride mismatch, reset confidence and update stride
+        entry.confidence = 0;
+        entry.stride = new_stride;
+    }
+
+    // Update retired value and decrement the instance counter
+    entry.ret_val = value;
+    entry.inst--;
+}
+
+    // If SVP tag miss, replace entry
+void install_svp(uint64_t tag, uint64_t value){
+    vpq_entry head = vpq_pop_head();
+    auto &entry = SVP[head.PC_index];
+
+    // Safety assert to ensure actually misses
+    assert(head.PC_tag != entry.tag);
+
+    // Overwrite entry with new tag and value
+    entry.tag = tag;
+    entry.ret_val = value;
+    entry.stride = 0;
+    entry.confidence = 0;
+    entry.inst = 0;
+}
+
