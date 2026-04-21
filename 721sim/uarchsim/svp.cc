@@ -35,6 +35,19 @@ uint64_t SVP_VPQ::get_tag(uint64_t PC) {
     return tag;
 }
 
+uint64_t SVP_VPQ::walk_VPQ(uint64_t index, uint64_t tag) {
+    uint64_t count = 0;         // initialize match count to 0
+    uint64_t i = vpq_head;      // walk from H to T
+
+    while (i != vpq_tail) {
+        if (VPQ[i].PC_index == index && VPQ[i].PC_tag == tag) {
+            count++;
+        }
+        i = (i + 1) % VPQ.size();
+    }
+    return count;
+}
+
 // Search SVP function, if tag match
 bool SVP_VPQ::search_svp(uint64_t PC_index, uint64_t tag) {
     bool hit = (tag_bits == 0) || (SVP[PC_index].tag == tag);
@@ -77,7 +90,7 @@ uint64_t SVP_VPQ::vpq_allocate(uint64_t index, uint64_t tag) {
 }
 
 // Deposit value in VPQ in Writeback
-void SVP_VPQ::deposit(uint64_t entry, uint64_t val){
+void SVP_VPQ::vpq_deposit(uint64_t entry, uint64_t val){
     VPQ[entry].value = val;
 }
 
@@ -124,7 +137,7 @@ void SVP_VPQ::install_svp(uint64_t tag, uint64_t value, uint64_t index){
     // Overwrite entry with new tag and value
     entry.tag = tag;
     entry.ret_val = value;
-    entry.stride = 0;
+    entry.stride = value;                  // from spec
     entry.confidence = 0;
-    entry.inst = 0;
+    entry.inst = walk_VPQ(index, tag);     // walk VPQ head to tail
 }

@@ -74,23 +74,22 @@ void pipeline_t::retire(size_t &instret) {
       }
 
       if (!exception && !load_viol) {
-         //
-         // FIX_ME #17b
-         // Commit the instruction at the head of the active list.
-         //
 
          // Train or install SVP entry
          if (PAY.buf[PAY.head].vp_eligible) {
             vpq_entry entry = SVP->vpq_pop_head();
             if (SVP->search_svp(entry.PC_index, entry.PC_tag)) {
-               // train
-               SVP->train_svp(entry.value, entry.PC_index);
+               SVP->train_svp(entry.value, entry.PC_index);    // Train SVP
             }
             else {
-               // install 
-               SVP->install_svp(entry.PC_tag, entry.value, entry.PC_index);
+               SVP->install_svp(entry.PC_tag, entry.value, entry.PC_index);   // Install in SVP
             }
          }
+
+         //
+         // FIX_ME #17b
+         // Commit the instruction at the head of the active list.
+         //
 
          // FIX_ME #17b BEGIN
          REN->commit();

@@ -48,6 +48,9 @@ public:
     // Return tag from PC
     uint64_t get_tag(uint64_t PC);
 
+    // Walk VPQ H to T
+    uint64_t walk_VPQ(uint64_t index, uint64_t tag);
+
     // Search SVP for tag
     bool search_svp(uint64_t PC_index, uint64_t tag);
     
@@ -58,7 +61,7 @@ public:
     uint64_t vpq_allocate(uint64_t index, uint64_t tag);
 
     // Deposit value in VPQ in Writeback
-    void deposit(uint64_t entry, uint64_t val);
+    void vpq_deposit(uint64_t entry, uint64_t val);
 
     // Pop VPQ head, return entry PC
     vpq_entry vpq_pop_head();

@@ -172,19 +172,33 @@ void pipeline_t::rename2() {
                PAY.buf[index].vp_value = actual->a_rdst[0].value;
             } 
          }
+         // Real Value Prediction
          else {
+            // Split PC into index and tag
             uint64_t tag = SVP->get_tag(PAY.buf[index].pc);
-            uint64_t index = SVP->get_index(PAY.buf[index].pc);
+            uint64_t pc_index = SVP->get_index(PAY.buf[index].pc);
 
-            if (SVP->search_svp(index, tag)) {
+            // Search SVP with PC index and tag
+            if (SVP->search_svp(pc_index, tag)) {
                db_t *actual;
+               actual->a_rdst[0].value = 0;     // Safe invalid value if !ORACLE_CONF
+
                if (PAY.buf[index].good_instruction && PAY.buf[index].db_index != DEBUG_INDEX_INVALID) {
+                  // Peak real value for ORACLE_CONF
                   actual = pipe->peek(PAY.buf[index].db_index);
-               }          
-               SVP->svp_hit(&PAY.buf[index], index, ORACLE_CONF, actual->a_rdst[0].value);
+               }
+               
+               // PC hit in SVP: increment instance, generate vp and confidence
+               SVP->svp_hit(&PAY.buf[index], pc_index, ORACLE_CONF, actual->a_rdst[0].value);
             }
+            else {
+               // PC miss in SVP: do not install in SVP (wait until retire) 
+               PAY.buf[index].vp_predicted = false;
+               PAY.buf[index].vp_confident = false;
+            }
+
             // Allocate VPQ tail entry + dyn instr carries VPQ entry number
-            PAY.buf[index].vpq_index = SVP->vpq_allocate(index, tag);
+            PAY.buf[index].vpq_index = SVP->vpq_allocate(pc_index, tag);
          }
       }
 

@@ -149,7 +149,7 @@ void pipeline_t::writeback(unsigned int lane_number) {
       }
 
       // VPQ writeback
-      if (PAY.buf[index].vp_eligible) SVP->deposit(PAY.buf[index].vpq_index, PAY.buf[index].C_value.dw);
+      if (PAY.buf[index].vp_eligible) SVP->vpq_deposit(PAY.buf[index].vpq_index, PAY.buf[index].C_value.dw);
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////
       // FIX_ME #16
