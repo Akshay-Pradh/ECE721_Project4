@@ -51,6 +51,12 @@ public:
     // Walk VPQ H to T
     uint64_t walk_VPQ(uint64_t index, uint64_t tag);
 
+    // Count num entries in the VPQ
+    uint64_t vpq_num_entries();
+
+    // Count num free entries in the VPQ
+    uint64_t vpq_free_entries();
+
     // Search SVP for tag
     bool search_svp(uint64_t PC_index, uint64_t tag);
     

@@ -48,6 +48,17 @@ uint64_t SVP_VPQ::walk_VPQ(uint64_t index, uint64_t tag) {
     return count;
 }
 
+uint64_t SVP_VPQ::vpq_num_entries() {
+    if (vpq_tail >= vpq_head)
+        return vpq_tail - vpq_head;
+    else
+        return VPQ.size() - (vpq_head - vpq_tail);
+}
+
+uint64_t SVP_VPQ::vpq_free_entries() {
+    return VPQ.size() - vpq_num_entries();
+}
+
 // Search SVP function, if tag match
 bool SVP_VPQ::search_svp(uint64_t PC_index, uint64_t tag) {
     bool hit = (tag_bits == 0) || (SVP[PC_index].tag == tag);
@@ -103,7 +114,7 @@ void SVP_VPQ::vpq_deposit(uint64_t entry, uint64_t val){
 
     // If SVP tag hit, train SVP entry, use value, decrement instance counter
 void SVP_VPQ::train_svp(uint64_t value, uint64_t index){
-    // Tag hit so entry is straight from SVP
+    // Entry in SVP indexed by PC_index
     auto &entry = SVP[index];
 
     // Calculate new delta (stride)
@@ -128,7 +139,7 @@ void SVP_VPQ::train_svp(uint64_t value, uint64_t index){
 
 // If SVP tag miss, replace entry
 void SVP_VPQ::install_svp(uint64_t tag, uint64_t value, uint64_t index){
-
+    // Entry in SVP indexed by PC_index
     auto &entry = SVP[index];
 
     // Safety assert to ensure actually misses

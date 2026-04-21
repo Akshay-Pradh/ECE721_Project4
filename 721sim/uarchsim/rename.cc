@@ -107,6 +107,17 @@ void pipeline_t::rename2() {
    }
    // FIX_ME #2 END
 
+   // Fourth stall condition: not enough VPQ entries for ALL eligible instructions
+   uint64_t vp_needed = 0;
+   for (i = 0; i < dispatch_width; i++) {
+      if (PAY.buf[i].vp_eligible) {
+         vp_needed++;
+      }
+   }
+   if (vp_needed > SVP->vpq_free_entries()) {
+      return;
+   }
+
    //
    // Sufficient resources are available to rename the rename bundle.
    //
@@ -180,16 +191,19 @@ void pipeline_t::rename2() {
 
             // Search SVP with PC index and tag
             if (SVP->search_svp(pc_index, tag)) {
-               db_t *actual;
-               actual->a_rdst[0].value = 0;     // Safe invalid value if !ORACLE_CONF
+               db_t *actual = nullptr;
+               int64_t oracle_val = 0;     // Safe invalid value if !ORACLE_CONF
 
-               if (PAY.buf[index].good_instruction && PAY.buf[index].db_index != DEBUG_INDEX_INVALID) {
+               bool use_oracle = (ORACLE_CONF && PAY.buf[index].good_instruction && PAY.buf[index].db_index != DEBUG_INDEX_INVALID);
+
+               if (use_oracle) {
                   // Peak real value for ORACLE_CONF
                   actual = pipe->peek(PAY.buf[index].db_index);
+                  oracle_val = actual->a_rdst[0].value;
                }
                
                // PC hit in SVP: increment instance, generate vp and confidence
-               SVP->svp_hit(&PAY.buf[index], pc_index, ORACLE_CONF, actual->a_rdst[0].value);
+               SVP->svp_hit(&PAY.buf[index], pc_index, use_oracle, oracle_val);
             }
             else {
                // PC miss in SVP: do not install in SVP (wait until retire) 
