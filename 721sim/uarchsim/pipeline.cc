@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <sys/stat.h>
 #include "parameters.h"
-#include "svp.h"
 #include <ctime>
 
 #undef STATE
@@ -244,7 +243,7 @@ pipeline_t::pipeline_t(
    REN = new renamer(NXPR + NFPR, prf_size, num_chkpts, rob_size);
 
    // Set up the SVP + VPQ
-   SVP = new SVP_VPQ(1, 1, 1, 1);
+   SVP = new SVP_VPQ(VPQ_SIZE, SVP_INDEX_BITS, SVP_TAG_BITS, SVP_CONF_MAX);
 
    /////////////////////////////////////////////////////////////
    // Pipeline register between the Rename and Dispatch Stages.

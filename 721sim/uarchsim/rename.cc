@@ -101,20 +101,27 @@ void pipeline_t::rename2() {
    // This is achieved by doing nothing and proceeding to the next statements.
 
    // FIX_ME #2 BEGIN
-   if(REN->stall_reg(bundle_dst) || 
-      REN->stall_branch(bundle_branch)) {
-      return;
-   }
+   // if(REN->stall_reg(bundle_dst) || 
+   //    REN->stall_branch(bundle_branch)) {
+   //    return;
+   // }
+
+   if(REN->stall_reg(bundle_dst) || REN->stall_branch(bundle_branch)) return;
    // FIX_ME #2 END
 
    // Fourth stall condition: not enough VPQ entries for ALL eligible instructions
    uint64_t vp_needed = 0;
    for (i = 0; i < dispatch_width; i++) {
-      if (PAY.buf[i].vp_eligible) {
-         vp_needed++;
+      if (!RENAME2[i].valid) break;
+      index = RENAME2[i].index;        // use the actual payload index
+      if (eligible(&PAY.buf[index])) {
+        vp_needed++;
+        PAY.buf[index].vp_eligible = true;
       }
    }
    if (vp_needed > SVP->vpq_free_entries()) {
+      printf("[VPQ STALL] needed=%lu free=%lu\n",
+        vp_needed, SVP->vpq_free_entries());
       return;
    }
 
@@ -159,9 +166,6 @@ void pipeline_t::rename2() {
       }
       // FIX_ME #3 END
 
-      // Check if instr. is VP eligible
-      PAY.buf[index].vp_eligible = eligible(&PAY.buf[index]);
-
       // std::cout << "[VP Debug] PC=0x" << std::hex << PAY.buf[index].pc
       //     << " vp_eligible=" << PAY.buf[index].vp_eligible
       //     << " good_instruction=" << PAY.buf[index].good_instruction
@@ -189,12 +193,24 @@ void pipeline_t::rename2() {
             uint64_t tag = SVP->get_tag(PAY.buf[index].pc);
             uint64_t pc_index = SVP->get_index(PAY.buf[index].pc);
 
+            // Allocate VPQ tail entry + dyn instr carries VPQ entry number
+            PAY.buf[index].vpq_index = SVP->vpq_allocate(pc_index, tag);
+
+            printf("PC=%lx index=%lu tag=%lu valid=%d stored_tag=%lu, vpq_index=%lu\n",
+            PAY.buf[index].pc,
+            pc_index,
+            tag,
+            SVP->SVP[pc_index].valid,
+            SVP->SVP[pc_index].tag,
+            PAY.buf[index].vpq_index);
+
             // Search SVP with PC index and tag
             if (SVP->search_svp(pc_index, tag)) {
                db_t *actual = nullptr;
                int64_t oracle_val = 0;     // Safe invalid value if !ORACLE_CONF
 
-               bool use_oracle = (ORACLE_CONF && PAY.buf[index].good_instruction && PAY.buf[index].db_index != DEBUG_INDEX_INVALID);
+               bool use_oracle = (ORACLE_CONF && PAY.buf[index].good_instruction);
+               printf("ORACLE_CONF \n");
 
                if (use_oracle) {
                   // Peak real value for ORACLE_CONF
@@ -210,9 +226,6 @@ void pipeline_t::rename2() {
                PAY.buf[index].vp_predicted = false;
                PAY.buf[index].vp_confident = false;
             }
-
-            // Allocate VPQ tail entry + dyn instr carries VPQ entry number
-            PAY.buf[index].vpq_index = SVP->vpq_allocate(pc_index, tag);
          }
       }
 

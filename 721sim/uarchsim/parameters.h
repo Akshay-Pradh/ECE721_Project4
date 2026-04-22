@@ -21,6 +21,11 @@ extern bool predFPALU;            // predict floating-point ALU instructions
 extern bool predLOAD;             // predict load instructions
 extern bool ORACLE_CONF;          // oracle confidence mode for VP
 
+extern uint64_t VPQ_SIZE;
+extern uint64_t SVP_INDEX_BITS;
+extern uint64_t SVP_TAG_BITS;
+extern uint64_t SVP_CONF_MAX;
+
 // MDP
 extern uint64_t SSIT_SIZE;
 extern uint64_t LFST_SIZE;

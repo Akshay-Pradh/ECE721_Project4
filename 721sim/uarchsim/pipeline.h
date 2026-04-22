@@ -32,7 +32,7 @@
 
 #include "renamer.h"           // REGISTER RENAMER + REGISTER FILE
 
-#include "svp.h"
+#include "svp.h"               // SVP + VPQ IMPLEMENTATION
 
 #include "lane.h"              // EXECUTION LANES
 

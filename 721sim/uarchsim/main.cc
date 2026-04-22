@@ -247,6 +247,24 @@ static void set_vp_eligible(const char *config) {
    }
 }
 
+// Parser function for SVP + VPQ
+static void set_vp_svp(const char *config) {
+   uint64_t vpq_size, oracleconf, index_bits, tag_bits, confmax;
+
+   if (sscanf(config, "%lu,%lu,%lu,%lu,%lu",
+              &vpq_size, &oracleconf, &index_bits, &tag_bits, &confmax) != 5) {
+      fprintf(stderr, "Incorrect usage of --vp-svp=<VPQsize>,<oracleconf>,<#index bits>,<#tag bits>,<confmax>\n");
+      exit(-1);
+   }
+   else {
+      VPQ_SIZE = vpq_size;
+      ORACLE_CONF = (oracleconf ? true : false);
+      SVP_INDEX_BITS = index_bits;
+      SVP_TAG_BITS = tag_bits;
+      SVP_CONF_MAX = confmax;
+   }
+}
+
 static void set_store_set_flags(const char *config) {
    uint64_t ssit_size, lfst_size, clear_period;
    if (sscanf(config, "%lu,%lu,%lu", &ssit_size, &lfst_size, &clear_period) != 3) {
@@ -440,6 +458,7 @@ int main(int argc, char **argv) {
 
    // Value Prediction parsing
    parser.option(0, "vp-eligible", 1, [&](const char *s) { set_vp_eligible(s); });
+   parser.option(0, "vp-svp", 1, [&](const char *s) { set_vp_svp(s); });
    parser.option(0, "vp-perf", 1, [&](const char *s) { VP_PERFECT = (atoi(s) ? true : false); });
 
    parser.option(0, "cp", 1, [&](const char *s) { NUM_CHECKPOINTS = atoi(s); });

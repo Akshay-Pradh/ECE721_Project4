@@ -74,11 +74,11 @@ void pipeline_t::execute(unsigned int lane_number) {
 
             // FIX_ME #13 BEGIN
             if (hit && PAY.buf[index].C_valid) {
-               if (!PAY.buf[index].vp_predicted) {    // Ignore wakeup for VP instr.
+               if (!(PAY.buf[index].vp_predicted && PAY.buf[index].vp_confident)) {    // Ignore wakeup for VP instr.
                   IQ.wakeup(PAY.buf[index].C_phys_reg, true);
+                  REN->set_ready(PAY.buf[index].C_phys_reg);
+                  REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);
                }
-               REN->set_ready(PAY.buf[index].C_phys_reg);
-               REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);
             }
             // FIX_ME #13 END
          }
@@ -193,10 +193,12 @@ void pipeline_t::execute(unsigned int lane_number) {
          //    b. Set the destination register's ready bit.
 
          // FIX_ME #11b BEGIN
-         if (PAY.buf[index].C_valid && !IS_LOAD(PAY.buf[index].flags) && !IS_AMO(PAY.buf[index].flags)) {
-            if (!PAY.buf[index].vp_predicted) {    // Ignore wakeup for VP instr.
-               IQ.wakeup(PAY.buf[index].C_phys_reg, true);
-            }
+          if (PAY.buf[index].C_valid &&
+            !(PAY.buf[index].vp_predicted && PAY.buf[index].vp_confident) &&    // Value predicted producers already made their destinations ready in dispatch
+            !IS_LOAD(PAY.buf[index].flags) &&
+            !IS_AMO(PAY.buf[index].flags)) {
+
+            IQ.wakeup(PAY.buf[index].C_phys_reg, true /* register dependency */);
             REN->set_ready(PAY.buf[index].C_phys_reg);
          }
          // FIX_ME #11b END
@@ -252,11 +254,15 @@ void pipeline_t::load_replay() {
          // 2. See #13 (in execute.cc), and implement steps 3a,3b,3c.
 
          // FIX_ME #18a BEGIN
-         if (!PAY.buf[index].vp_predicted) {    // Ignore wakeup for VP instr.
-            IQ.wakeup(PAY.buf[index].C_phys_reg, true);                       // wakeup dependencies in IQ 
+         if (!(PAY.buf[index].vp_predicted && PAY.buf[index].vp_confident)) {    // Ignore wakeup for VP instr.
+            IQ.wakeup(PAY.buf[index].C_phys_reg, true);                         // wakeup dependencies in IQ 
+            REN->set_ready(PAY.buf[index].C_phys_reg);                           // set ready bit in PRF
+            REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);    // Write dw value to PRF
          }
-         REN->set_ready(PAY.buf[index].C_phys_reg);                           // set ready bit in PRF
-         REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);    // Write dw value to PRF
+         else {
+            REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);
+            REN->set_value_misprediction(PAY.buf[index].AL_index);
+         }
          // FIX_ME #18a END
       }
 

@@ -20,6 +20,11 @@ bool predFPALU = false;            // predict floating-point ALU instructions
 bool predLOAD = false;             // predict load instructions
 bool ORACLE_CONF = false;          // oracle confidence mode for VP
 
+uint64_t VPQ_SIZE = 0;
+uint64_t SVP_INDEX_BITS = 0;
+uint64_t SVP_TAG_BITS = 0;
+uint64_t SVP_CONF_MAX = 0;
+
 
 // MDP
 uint64_t SSIT_SIZE = 4096;

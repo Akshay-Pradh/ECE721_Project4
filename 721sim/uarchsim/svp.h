@@ -4,15 +4,11 @@
 #include "payload.h"
 
 typedef struct svp_entry {
-    // tag
+    bool valid;
     uint64_t tag;
-    // confidence
     uint64_t confidence;
-    // retired_value
     uint64_t ret_val;
-    // stride
     int64_t stride;
-    // instance
     int64_t inst;
 }svp_entry;
 
@@ -20,18 +16,19 @@ typedef struct vpq_entry {
     uint64_t PC_tag;
     uint64_t PC_index;
     uint64_t value;
+    bool valid;
 }vpq_entry;
 
 
 class SVP_VPQ {
 private:
-    // Data structure for SVP
-    std::vector<svp_entry> SVP;
+
 
     // Data structure for VPQ
     std::vector<vpq_entry> VPQ;
-    uint64_t vpq_head;
-    uint64_t vpq_tail;
+    // uint64_t vpq_head;
+    // uint64_t vpq_tail;
+    uint64_t vpq_count;     // keep track of number of VPQ entries
 
     // Other private variables
     uint64_t conf_max;
@@ -77,4 +74,10 @@ public:
 
     // If SVP tag miss, replace entry
     void install_svp(uint64_t tag, uint64_t value, uint64_t index);
+
+    uint64_t vpq_head;
+    uint64_t vpq_tail;
+
+    // Data structure for SVP
+    std::vector<svp_entry> SVP;
 };
