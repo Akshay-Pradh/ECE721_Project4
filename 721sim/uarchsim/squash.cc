@@ -56,6 +56,9 @@ void pipeline_t::squash_complete(reg_t jump_PC) {
 
    IQ.flush();
 
+   // Flash clear the SVP and VPQ 
+   SVP->flash_clear();
+
    //////////////////////////
    // Register Read Stage
    // Execute Stage
@@ -91,6 +94,7 @@ void pipeline_t::resolve(unsigned int branch_ID, bool correct) {
 
       // Schedule Stage:
       IQ.clear_branch_bit(branch_ID);
+      SVP->clear_mask_bits(branch_ID);
 
       for (i = 0; i < issue_width; i++) {
          // Register Read Stage:
@@ -148,5 +152,8 @@ void pipeline_t::resolve(unsigned int branch_ID, bool correct) {
             Execution_Lanes[i].wb.valid = false;
          }
       }
+
+      // Branch misprediction, VPQ rollback
+      SVP->vpq_rollback(branch_ID);
    }
 }

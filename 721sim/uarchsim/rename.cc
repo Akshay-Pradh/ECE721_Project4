@@ -195,7 +195,7 @@ void pipeline_t::rename2() {
             uint64_t pc_index = SVP->get_index(PAY.buf[index].pc);
 
             // Allocate VPQ tail entry + dyn instr carries VPQ entry number
-            PAY.buf[index].vpq_index = SVP->vpq_allocate(pc_index, tag);
+            PAY.buf[index].vpq_index = SVP->vpq_allocate(pc_index, tag, REN->get_branch_mask());
 
             // Search SVP with PC index and tag
             if (SVP->search_svp(pc_index, tag)) {

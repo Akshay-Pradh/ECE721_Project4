@@ -66,6 +66,7 @@ void pipeline_t::writeback(unsigned int lane_number) {
 
             // FIX_ME #15a BEGIN
             REN->resolve(PAY.buf[index].AL_index, PAY.buf[index].branch_ID, true);
+            SVP->clear_mask_bits(PAY.buf[index].branch_ID);
             // FIX_ME #15a END
          }
          else if (PAY.buf[index].next_pc == PAY.buf[index].c_next_pc) {
@@ -126,6 +127,8 @@ void pipeline_t::writeback(unsigned int lane_number) {
             if (STORE_SETS) {
                MDP->rollback(PAY.buf[index].MDP_RQ_index, PAY.buf[index].MDP_RQ_phase);
             }
+
+            // Repair the VPQ
 
             // FIX_ME #15d
             // Squash instructions after the branch in program order, in all pipeline registers and the IQ.

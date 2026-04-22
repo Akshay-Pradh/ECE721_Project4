@@ -55,7 +55,6 @@ uint64_t SVP_VPQ::walk_VPQ(uint64_t index, uint64_t tag) {
         }
         i = (i + 1) % VPQ.size();
     }
-
     return count;
 }
 
@@ -102,7 +101,7 @@ void SVP_VPQ::svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, int64_
 }
 
 // Allocate entry in VPQ, returns entry number
-uint64_t SVP_VPQ::vpq_allocate(uint64_t index, uint64_t tag) {
+uint64_t SVP_VPQ::vpq_allocate(uint64_t index, uint64_t tag, uint64_t branch_mask) {
     assert(vpq_count < VPQ.size());     // assert check for safety
     
     uint64_t idx = vpq_tail;
@@ -111,6 +110,7 @@ uint64_t SVP_VPQ::vpq_allocate(uint64_t index, uint64_t tag) {
     VPQ[idx].PC_index = index;
     VPQ[idx].PC_tag = tag;
     VPQ[idx].valid = true;
+    VPQ[idx].branch_mask = branch_mask;
 
     vpq_tail = (vpq_tail + 1) % VPQ.size();
     vpq_count++;    // one more VPQ entry;
@@ -179,4 +179,66 @@ void SVP_VPQ::install_svp(uint64_t tag, uint64_t value, uint64_t index){
     entry.stride = value;                  // from spec
     entry.confidence = 0;
     entry.inst = walk_VPQ(index, tag);     // walk VPQ head to tail
+}
+
+void SVP_VPQ::clear_mask_bits(uint64_t branch_ID) {
+    // Branch mask clear bit = 1 << branch_ID
+    uint64_t mask_bit = (1UL << branch_ID);
+
+    // Clear branch mask bit for all valid VPQ entries
+    for (auto &entry: VPQ) {
+        if (entry.valid) {
+            entry.branch_mask &= ~mask_bit;
+        }
+    }
+}
+
+void SVP_VPQ::vpq_rollback(uint64_t branch_ID) {
+    uint64_t mask_bit = (1ULL << branch_ID);
+
+    while (vpq_count > 0) {
+        // Set index of latest VPQ entry
+        uint64_t latest_index = (vpq_tail == 0) ? (VPQ_SIZE - 1) : (vpq_tail - 1);
+        vpq_entry &entry = VPQ[latest_index];
+
+        if ((entry.branch_mask & mask_bit) == 0) {
+            break;
+        }
+        
+        // If we hit in the SVP, decrement instance counter
+        if (search_svp(entry.PC_index, entry.PC_tag)) {
+            if (SVP[entry.PC_index].inst > 0) {
+                SVP[entry.PC_index].inst--;
+            }
+        }
+
+        // Clears VPQ entry
+        entry.valid = false;
+        entry.PC_index = 0;
+        entry.PC_tag = 0;
+        entry.value = 0;
+
+        vpq_tail = latest_index;
+        vpq_count--;
+    }
+}
+
+void SVP_VPQ::flash_clear() {
+    // Clear SVP instances
+    for (auto &entry: SVP) {
+        entry.inst = 0;
+    }
+
+    // Clear VPQ
+    for (auto &entry: VPQ) {
+        entry.valid = false;
+        entry.PC_index = 0;
+        entry.PC_tag = 0;
+        entry.value = 0;
+    }
+
+    // Reset VPQ head, tail and valid entry count
+    vpq_head = 0;
+    vpq_tail = 0;
+    vpq_count = 0;
 }

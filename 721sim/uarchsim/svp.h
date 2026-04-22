@@ -16,6 +16,7 @@ typedef struct vpq_entry {
     uint64_t PC_tag;
     uint64_t PC_index;
     uint64_t value;
+    uint64_t branch_mask;
     bool valid;
 }vpq_entry;
 
@@ -55,7 +56,7 @@ public:
     // Count num free entries in the VPQ
     uint64_t vpq_free_entries();
 
-    // Return reference to data from entry in VPQ
+    // Return reference to head entry data from VPQ
     vpq_entry vpq_index_head();
 
     // Search SVP for tag
@@ -65,7 +66,7 @@ public:
     void svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, int64_t oracle_val);
 
     // Allocate entry in VPQ, returns entry number
-    uint64_t vpq_allocate(uint64_t index, uint64_t tag);
+    uint64_t vpq_allocate(uint64_t index, uint64_t tag, uint64_t branch_mask);
 
     // Deposit value in VPQ in Writeback
     void vpq_deposit(uint64_t entry, uint64_t val);
@@ -78,4 +79,14 @@ public:
 
     // If SVP tag miss, replace entry
     void install_svp(uint64_t tag, uint64_t value, uint64_t index);
+
+    // Rollback recovery for VPQ
+    void vpq_rollback(uint64_t branch_ID);
+
+    // Clearing vpq branch mask bits
+    void clear_mask_bits(uint64_t branch_ID);
+
+    // Flash clear instances in SVP and VPQ
+    void flash_clear();
+
 };

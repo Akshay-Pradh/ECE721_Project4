@@ -1,6 +1,7 @@
 #include "renamer.h"
 #include <cassert>
 #include <stdio.h>
+#include "pipeline.h"
 
 /* ====================  Free List  ==================== */
 
@@ -276,6 +277,7 @@ renamer::renamer(uint64_t n_log_regs,
 
     for (uint64_t i = 0; i < n_branches; i++) {
         checkpoints[i].GBM = 0;
+        checkpoints[i].vpq_tail = 0;
         checkpoints[i].shadow_RMT.resize(n_log_regs);
     }
 }
@@ -612,6 +614,8 @@ void renamer::resolve(uint64_t AL_index,
             checkpoint.GBM &= ~branch_mask;
         }
         return;
+
+
     }
     /* Incorrect Branch Prediction */
     else {

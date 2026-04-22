@@ -124,6 +124,7 @@ void pipeline_t::retire(size_t &instret) {
                }
                else {
                   SVP->install_svp(entry.PC_tag, entry.value, entry.PC_index);   // Install in SVP
+                  // removed smth from here last time
                }
             }
             num_insn++;
