@@ -117,14 +117,8 @@ void pipeline_t::retire(size_t &instret) {
          // Split instructions should only count as one architectural instruction, therefore, only the second uop should increment the count.
          if (!PAY.buf[PAY.head].split || !PAY.buf[PAY.head].upper) {
             // Train or install SVP entry
-            if (PAY.buf[PAY.head].vp_eligible) {
-               printf("[RETIRE] vpq_count=%lu vpq_head=%lu vpq_tail=%lu\n", SVP->vpq_num_entries(), SVP->vpq_head, SVP->vpq_tail);
-               printf("[RETIRE CHECK] head_PC=%lx vpq_count=%lu vp_eligible=%d\n",
-               PAY.buf[PAY.head].pc,
-               SVP->vpq_num_entries(),
-               PAY.buf[PAY.head].vp_eligible);
-
-                             
+            if (!VP_PERFECT && PAY.buf[PAY.head].vp_eligible) {
+               vpq_entry entry = SVP->vpq_pop_head();
                if (SVP->search_svp(entry.PC_index, entry.PC_tag)) {
                   SVP->train_svp(entry.value, entry.PC_index);    // Train SVP
                }
@@ -132,7 +126,6 @@ void pipeline_t::retire(size_t &instret) {
                   SVP->install_svp(entry.PC_tag, entry.value, entry.PC_index);   // Install in SVP
                }
             }
-
             num_insn++;
             instret++;
             inc_counter(commit_count);

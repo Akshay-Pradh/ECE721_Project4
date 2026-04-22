@@ -113,15 +113,13 @@ void pipeline_t::rename2() {
    uint64_t vp_needed = 0;
    for (i = 0; i < dispatch_width; i++) {
       if (!RENAME2[i].valid) break;
-      index = RENAME2[i].index;        // use the actual payload index
-      if (eligible(&PAY.buf[index])) {
-        vp_needed++;
-        PAY.buf[index].vp_eligible = true;
+      index = RENAME2[i].index;
+      PAY.buf[index].vp_eligible = eligible(&PAY.buf[index]);
+      if (!VP_PERFECT && PAY.buf[index].vp_eligible) {
+         vp_needed++;
       }
    }
-   if (vp_needed > SVP->vpq_free_entries()) {
-      printf("[VPQ STALL] needed=%lu free=%lu\n",
-        vp_needed, SVP->vpq_free_entries());
+   if (!VP_PERFECT && (vp_needed > SVP->vpq_free_entries())) {
       return;
    }
 
@@ -173,8 +171,11 @@ void pipeline_t::rename2() {
       //     << std::endl;
 
       // Reset VP flags by default
+      PAY.buf[index].vp_eligible = eligible(&PAY.buf[index]);
       PAY.buf[index].vp_predicted = false;
       PAY.buf[index].vp_confident = false;
+      PAY.buf[index].vp_value = 0;
+      PAY.buf[index].vpq_index = 0;
 
       // Check if instruction is VP eligible
       if (PAY.buf[index].vp_eligible) {
@@ -196,21 +197,12 @@ void pipeline_t::rename2() {
             // Allocate VPQ tail entry + dyn instr carries VPQ entry number
             PAY.buf[index].vpq_index = SVP->vpq_allocate(pc_index, tag);
 
-            printf("PC=%lx index=%lu tag=%lu valid=%d stored_tag=%lu, vpq_index=%lu\n",
-            PAY.buf[index].pc,
-            pc_index,
-            tag,
-            SVP->SVP[pc_index].valid,
-            SVP->SVP[pc_index].tag,
-            PAY.buf[index].vpq_index);
-
             // Search SVP with PC index and tag
             if (SVP->search_svp(pc_index, tag)) {
                db_t *actual = nullptr;
                int64_t oracle_val = 0;     // Safe invalid value if !ORACLE_CONF
 
                bool use_oracle = (ORACLE_CONF && PAY.buf[index].good_instruction);
-               printf("ORACLE_CONF \n");
 
                if (use_oracle) {
                   // Peak real value for ORACLE_CONF

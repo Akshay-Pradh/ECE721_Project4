@@ -261,7 +261,6 @@ void pipeline_t::load_replay() {
          }
          else {
             REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);
-            REN->set_value_misprediction(PAY.buf[index].AL_index);
          }
          // FIX_ME #18a END
       }

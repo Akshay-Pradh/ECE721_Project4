@@ -22,12 +22,13 @@ typedef struct vpq_entry {
 
 class SVP_VPQ {
 private:
-
+    // Data structure for SVP
+    std::vector<svp_entry> SVP;
 
     // Data structure for VPQ
     std::vector<vpq_entry> VPQ;
-    // uint64_t vpq_head;
-    // uint64_t vpq_tail;
+    uint64_t vpq_head;
+    uint64_t vpq_tail;
     uint64_t vpq_count;     // keep track of number of VPQ entries
 
     // Other private variables
@@ -54,6 +55,9 @@ public:
     // Count num free entries in the VPQ
     uint64_t vpq_free_entries();
 
+    // Return reference to data from entry in VPQ
+    vpq_entry vpq_index_head();
+
     // Search SVP for tag
     bool search_svp(uint64_t PC_index, uint64_t tag);
     
@@ -74,10 +78,4 @@ public:
 
     // If SVP tag miss, replace entry
     void install_svp(uint64_t tag, uint64_t value, uint64_t index);
-
-    uint64_t vpq_head;
-    uint64_t vpq_tail;
-
-    // Data structure for SVP
-    std::vector<svp_entry> SVP;
 };

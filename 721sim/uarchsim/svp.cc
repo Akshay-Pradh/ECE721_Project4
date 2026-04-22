@@ -67,6 +67,10 @@ uint64_t SVP_VPQ::vpq_free_entries() {
     return VPQ.size() - vpq_count;
 }
 
+vpq_entry SVP_VPQ::vpq_index_head() {
+    return VPQ[vpq_head];
+}
+
 // Search SVP function, if tag match
 bool SVP_VPQ::search_svp(uint64_t PC_index, uint64_t tag) {
     if (!SVP[PC_index].valid) return false;
@@ -120,16 +124,14 @@ void SVP_VPQ::vpq_deposit(uint64_t entry, uint64_t val) {
 }
 
 // Pop VPQ head, return entry PC
- vpq_entry SVP_VPQ::vpq_pop_head() {
-
-    printf("[VPQ POP] head=%lu tail=%lu\n", vpq_head, vpq_tail);
-
+vpq_entry SVP_VPQ::vpq_pop_head() {
     vpq_entry entry = VPQ[vpq_head];
     VPQ[vpq_head].valid = false;        // invalidate VPQ entry
     vpq_head = (vpq_head + 1) % VPQ.size();
     vpq_count--;                        // one less VPQ entry
     return entry;
- }
+}
+
 
 // If SVP tag hit, train SVP entry, use value, decrement instance counter
 void SVP_VPQ::train_svp(uint64_t value, uint64_t index){

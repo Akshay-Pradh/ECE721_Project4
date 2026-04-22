@@ -48,7 +48,7 @@ void pipeline_t::register_read(unsigned int lane_number) {
 
       // FIX_ME #11a BEGIN
       if (PAY.buf[index].C_valid && lat == 1 && !IS_LOAD(PAY.buf[index].flags) && !IS_AMO(PAY.buf[index].flags)) {
-         if (!PAY.buf[index].vp_predicted) {    // Ignore wakeup for VP instr.
+         if (!(PAY.buf[index].vp_predicted && PAY.buf[index].vp_confident)) {
              IQ.wakeup(PAY.buf[index].C_phys_reg, true);     // wakeup dependents in IQ
          }
          REN->set_ready(PAY.buf[index].C_phys_reg);      // set dst register's ready bit
@@ -59,9 +59,7 @@ void pipeline_t::register_read(unsigned int lane_number) {
       // (1) Wakeup any dependent store and/or load(s).
       // (2) Remove the store's inum from its LFST entry if still there.
       if (IS_STORE(PAY.buf[index].flags)) {
-         if (!PAY.buf[index].vp_predicted) {    // Ignore wakeup for VP instr.
-              IQ.wakeup(PAY.buf[index].AL_index /* store's inum */, false /* memory dependency */);
-         }
+         IQ.wakeup(PAY.buf[index].AL_index /* store's inum */, false /* memory dependency */);
          if (STORE_SETS || ORACLE_MDP) {
             bool oracle_addr_valid = false;
             uint64_t oracle_addr = 0xDEADBEEF;
