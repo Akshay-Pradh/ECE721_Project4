@@ -78,7 +78,6 @@ bool SVP_VPQ::search_svp(uint64_t PC_index, uint64_t tag) {
 
 // Generate value prediction if hit in SVP
 void SVP_VPQ::svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, int64_t oracle_val) {
-
     auto &entry = SVP[index];
 
     // Increment instance count
@@ -125,6 +124,9 @@ void SVP_VPQ::vpq_deposit(uint64_t entry, uint64_t val) {
 
 // Pop VPQ head, return entry PC
 vpq_entry SVP_VPQ::vpq_pop_head() {
+    assert(vpq_count > 0);
+    assert(VPQ[vpq_head].valid);
+
     vpq_entry entry = VPQ[vpq_head];
     VPQ[vpq_head].valid = false;        // invalidate VPQ entry
     vpq_head = (vpq_head + 1) % VPQ.size();
@@ -135,8 +137,6 @@ vpq_entry SVP_VPQ::vpq_pop_head() {
 
 // If SVP tag hit, train SVP entry, use value, decrement instance counter
 void SVP_VPQ::train_svp(uint64_t value, uint64_t index){
-
-    assert(vpq_count > 0);
     assert(index < SVP.size());
 
     // Entry in SVP indexed by PC_index
@@ -193,6 +193,8 @@ void SVP_VPQ::clear_mask_bits(uint64_t branch_ID) {
     }
 }
 
+// Simulating VPQ rollback and checkpoint integration via storing branch_mask in each VPQ entry
+// Rollback via logical AND of branch ID and vpq entries branch mask (rollback until no dependence)
 void SVP_VPQ::vpq_rollback(uint64_t branch_ID) {
     uint64_t mask_bit = (1ULL << branch_ID);
 
@@ -223,6 +225,7 @@ void SVP_VPQ::vpq_rollback(uint64_t branch_ID) {
     }
 }
 
+// Flash clear SVP VPQ under complete squash
 void SVP_VPQ::flash_clear() {
     // Clear SVP instances
     for (auto &entry: SVP) {

@@ -349,7 +349,7 @@ public:
 	// 2. checkpointed Free List head pointer and its phase bit
 	// 3. checkpointed GBM
 	/////////////////////////////////////////////////////////////////////
-	uint64_t checkpoint(uint64_t vpq_tail);
+	uint64_t checkpoint();
 
 	//////////////////////////////////////////
 	// Functions related to Dispatch Stage. //

@@ -79,6 +79,10 @@ void pipeline_t::execute(unsigned int lane_number) {
                   REN->set_ready(PAY.buf[index].C_phys_reg);
                   REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);
                }
+               else if ((PAY.buf[index].vp_predicted && PAY.buf[index].vp_confident) && (PAY.buf[index].C_value.dw != PAY.buf[index].vp_value)) {
+                  REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);
+                  REN->set_value_misprediction(PAY.buf[index].AL_index);
+               }
             }
             // FIX_ME #13 END
          }
@@ -136,7 +140,12 @@ void pipeline_t::execute(unsigned int lane_number) {
 
          // FIX_ME #14 BEGIN
          if (PAY.buf[index].C_valid) {
-            REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);
+            if (!(PAY.buf[index].vp_predicted && PAY.buf[index].vp_confident) || (PAY.buf[index].C_value.dw != PAY.buf[index].vp_value)) {
+               REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);
+            }
+            if ((PAY.buf[index].vp_predicted && PAY.buf[index].vp_confident) && (PAY.buf[index].C_value.dw != PAY.buf[index].vp_value)) {
+               REN->set_value_misprediction(PAY.buf[index].AL_index);
+            }
          }
          // FIX_ME #14 END
       }
@@ -259,8 +268,9 @@ void pipeline_t::load_replay() {
             REN->set_ready(PAY.buf[index].C_phys_reg);                           // set ready bit in PRF
             REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);    // Write dw value to PRF
          }
-         else {
+         else if ((PAY.buf[index].vp_predicted && PAY.buf[index].vp_confident) && (PAY.buf[index].C_value.dw != PAY.buf[index].vp_value)) {
             REN->write(PAY.buf[index].C_phys_reg, PAY.buf[index].C_value.dw);
+            REN->set_value_misprediction(PAY.buf[index].AL_index);
          }
          // FIX_ME #18a END
       }
