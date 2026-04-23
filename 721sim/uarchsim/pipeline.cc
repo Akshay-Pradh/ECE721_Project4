@@ -417,6 +417,11 @@ pipeline_t::pipeline_t(
    fprintf(stats_log, "IBP_BHR_LENGTH = %d\n", IBP_BHR_LENGTH);
    fprintf(stats_log, "ENABLE_TRACE_CACHE = %d\n", (ENABLE_TRACE_CACHE ? 1 : 0));
 
+   // Add VP config print if VP enabled
+   if (VP_SVP || VP_PERFECT) {
+      SVP->svp_vpq_config(stats_log);
+   }
+
    fprintf(stats_log, "\n=== INTERNAL SIMULATOR STRUCTURES ===============================================\n\n");
 
    fprintf(stats_log, "PAYLOAD_BUFFER_SIZE = %d\n", PAY.get_size());
@@ -462,6 +467,10 @@ pipeline_t::~pipeline_t() {
 
    FetchUnit->output(stats->get_counter("commit_count"), stats->get_counter("cycle_count"), stats_log);
    LSU.dump_stats(extra_wait_time_for_inum, stats_log);
+
+   if (VP_SVP || VP_PERFECT) {
+      SVP->svp_vpq_stats(stats_log, stats->get_counter("commit_count"));
+   }
 
 #ifdef RISCV_MICRO_DEBUG
    fclose(this->fetch_log);

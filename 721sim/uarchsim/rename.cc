@@ -115,11 +115,11 @@ void pipeline_t::rename2() {
       if (!RENAME2[i].valid) break;
       index = RENAME2[i].index;
       PAY.buf[index].vp_eligible = eligible(&PAY.buf[index]);
-      if (!VP_PERFECT && PAY.buf[index].vp_eligible) {
+      if (VP_SVP && PAY.buf[index].vp_eligible) {
          vp_needed++;
       }
    }
-   if (!VP_PERFECT && (vp_needed > SVP->vpq_free_entries())) {
+   if (VP_SVP && (vp_needed > SVP->vpq_free_entries())) {
       return;
    }
 
@@ -189,7 +189,7 @@ void pipeline_t::rename2() {
             } 
          }
          // Real Value Prediction
-         else {
+         else if (VP_SVP) {
             // Split PC into index and tag
             uint64_t tag = SVP->get_tag(PAY.buf[index].pc);
             uint64_t pc_index = SVP->get_index(PAY.buf[index].pc);

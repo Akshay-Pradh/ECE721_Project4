@@ -1,6 +1,8 @@
 #include <inttypes.h>
+#include <assert.h>
 #include <stdio.h>
 #include <vector>
+#include "parameters.h"
 #include "payload.h"
 
 typedef struct svp_entry {
@@ -37,9 +39,31 @@ private:
     uint64_t tag_bits;
     uint64_t index_bits;
 
+    // Statistics variables
+    uint64_t vpmeas_ineligible;
+    uint64_t vpmeas_eligible;
+    uint64_t vpmeas_miss;
+    uint64_t vpmeas_conf_corr;
+    uint64_t vpmeas_conf_incorr;
+    uint64_t vpmeas_unconf_corr;
+    uint64_t vpmeas_unconf_incorr;
+
 public:
     // constructor
     SVP_VPQ(uint64_t vpq_size, uint64_t index_bits, uint64_t tag_bits, uint64_t conf);
+    
+    // Dump SVP VPQ config + cost accounting data
+    void svp_vpq_config(FILE *fp);
+
+    // Dump SVP VPQ run stats:
+    // vpmeas_ineligible, vpmeas_eligible
+    // vpmeas_miss, vpmeas_conf_corr, vpmeas_conf_incorr, vpmeas_unconf_corr, vpmeas_unconf_incorr
+    void svp_vpq_stats(FILE *fp, uint64_t commit_count);
+
+    // Helper function for svp_vpq_config function
+    uint64_t bits_to_encode(uint64_t n);
+
+    void inc_counters(const payload_t *pay);
 
     // Return index from PC 
     uint64_t get_index(uint64_t PC);
@@ -88,5 +112,4 @@ public:
 
     // Flash clear instances in SVP and VPQ
     void flash_clear();
-
 };

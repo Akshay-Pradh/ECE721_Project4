@@ -244,6 +244,7 @@ static void set_vp_eligible(const char *config) {
       predINTALU = (VP_PRED_INTALU ? true : false);
       predFPALU = (VP_PRED_FPALU ? true : false);
       predLOAD = (VP_PRED_LOAD ? true : false);
+      VP_ELIGIBLE_SPECIFIED = true;
    }
 }
 
@@ -262,6 +263,35 @@ static void set_vp_svp(const char *config) {
       SVP_INDEX_BITS = index_bits;
       SVP_TAG_BITS = tag_bits;
       SVP_CONF_MAX = confmax;
+      VP_SVP = true;
+   }
+}
+
+// Function to validate VP configuration
+static void validate_vp_config() {
+   unsigned int vp_predictor_count = 0;
+
+   vp_predictor_count += (VP_PERFECT ? 1 : 0);
+   vp_predictor_count += (VP_SVP ? 1 : 0);
+
+   if (vp_predictor_count > 1) {
+      fprintf(stderr, "Incorrect usage:\n");
+      fprintf(stderr, "Specify one and only one value predictor.\n");
+      fprintf(stderr, "Supported value predictors currently are --vp-perf=1 and --vp-svp=<VPQsize>,<oracleconf>,<#index bits>,<#tag bits>,<confmax>\n");
+      exit(-1);
+   }
+
+   if (vp_predictor_count == 1 && !VP_ELIGIBLE_SPECIFIED) {
+      fprintf(stderr, "Incorrect usage:\n");
+      fprintf(stderr, "If value prediction is enabled, you must also specify --vp-eligible=<predINTALU>,<predFPALU>,<predLOAD>\n");
+      exit(-1);
+   }
+
+   if (vp_predictor_count == 0) {
+      predINTALU = false;
+      predFPALU = false;
+      predLOAD = false;
+      ORACLE_CONF = false;
    }
 }
 
@@ -504,6 +534,10 @@ int main(int argc, char **argv) {
    auto argv1 = parser.parse(argv);
    if (!*argv1)
       help();
+
+   // Assert VP configuration is valid
+   validate_vp_config();
+
    std::vector<std::string> htif_args(argv1, (const char *const *) argv + argc);
 
 #ifdef RISCV_MICRO_CHECKER

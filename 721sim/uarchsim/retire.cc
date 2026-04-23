@@ -116,8 +116,12 @@ void pipeline_t::retire(size_t &instret) {
          // Keep track of the number of retired instructions.
          // Split instructions should only count as one architectural instruction, therefore, only the second uop should increment the count.
          if (!PAY.buf[PAY.head].split || !PAY.buf[PAY.head].upper) {
+            if (VP_PERFECT || VP_SVP) {
+               SVP->inc_counters(&PAY.buf[PAY.head]);
+            }
+
             // Train or install SVP entry
-            if (!VP_PERFECT && PAY.buf[PAY.head].vp_eligible) {
+            if (VP_SVP && PAY.buf[PAY.head].vp_eligible) {
                vpq_entry entry = SVP->vpq_pop_head();
                if (SVP->search_svp(entry.PC_index, entry.PC_tag)) {
                   SVP->train_svp(entry.value, entry.PC_index);    // Train SVP
