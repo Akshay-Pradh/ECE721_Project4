@@ -202,16 +202,18 @@ void pipeline_t::rename2() {
                db_t *actual = nullptr;
                int64_t oracle_val = 0;     // Safe invalid value if !ORACLE_CONF
 
-               bool use_oracle = (ORACLE_CONF && PAY.buf[index].good_instruction);
+               bool oracle_valid = (ORACLE_CONF &&
+                     PAY.buf[index].good_instruction &&
+                     PAY.buf[index].db_index != DEBUG_INDEX_INVALID);
 
-               if (use_oracle) {
+               if (oracle_valid) {
                   // Peak real value for ORACLE_CONF
                   actual = pipe->peek(PAY.buf[index].db_index);
                   oracle_val = actual->a_rdst[0].value;
                }
                
                // PC hit in SVP: increment instance, generate vp and confidence
-               SVP->svp_hit(&PAY.buf[index], pc_index, use_oracle, oracle_val);
+               SVP->svp_hit(&PAY.buf[index], pc_index, ORACLE_CONF, oracle_valid, oracle_val);
             }
             else {
                // PC miss in SVP: do not install in SVP (wait until retire) 

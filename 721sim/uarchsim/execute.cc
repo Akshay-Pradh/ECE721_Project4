@@ -257,6 +257,10 @@ void pipeline_t::load_replay() {
          assert(PAY.buf[index].C_log_reg != 0); // if X0, would have cleared C_valid in Decode Stage
          PAY.buf[index].C_value.dw = value;
 
+         if (VP_SVP && PAY.buf[index].vp_eligible) {
+            SVP->vpq_deposit(PAY.buf[index].vpq_index, PAY.buf[index].C_value.dw);
+         }
+
          // FIX_ME #18a
          // Tips:
          // 1. At this point of the code, 'index' is the instruction's index into PAY.buf[] (payload).

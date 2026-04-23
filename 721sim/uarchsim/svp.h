@@ -87,7 +87,7 @@ public:
     bool search_svp(uint64_t PC_index, uint64_t tag);
     
     // Generate value prediction and confidence if hit in SVP
-    void svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, int64_t oracle_val);
+    void svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, bool oracle_valid, int64_t oracle_val);
 
     // Allocate entry in VPQ, returns entry number
     uint64_t vpq_allocate(uint64_t index, uint64_t tag, uint64_t branch_mask);
