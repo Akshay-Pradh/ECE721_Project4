@@ -8,8 +8,7 @@ SVP_VPQ::SVP_VPQ(uint64_t vpq_size, uint64_t index_bits, uint64_t tag_bits, uint
         for (auto &entry: SVP) {
             entry.valid = false;
             entry.tag = 0;
-            entry.stride_conf = 0;
-            entry.ret_val = 0;
+            entry.confidence = 0;
             entry.ret_val = 0;
             entry.stride = 0;
             entry.inst = 0;
@@ -204,26 +203,25 @@ bool SVP_VPQ::search_svp(uint64_t PC_index, uint64_t tag) {
 }
 
 // Generate value prediction if hit in SVP
-void SVP_VPQ::svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, int64_t oracle_val) {
+void SVP_VPQ::svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, bool oracle_valid, int64_t oracle_val) {
     auto &entry = SVP[index];
 
-    // Count this newly-renamed dynamic instance
+    // Increment instance count
     entry.inst++;
+    
+    // Prediction generation
+    int64_t pred = entry.ret_val + entry.inst * entry.stride;
 
-    int64_t stride_pred = (int64_t)entry.ret_val + entry.inst * entry.stride;
-    int64_t lv_pred     = (int64_t)entry.ret_val;
-
-    bool use_stride = (entry.stride_conf >= entry.lv_conf);
-    int64_t pred    = use_stride ? stride_pred : lv_pred;
-
+    // Update dynamic instr 
     instr->vp_value = pred;
     instr->vp_predicted = true;
-
+    
+    // Oracle mode vs Normal Mode (+ recovery)
     if (oracle_mode) {
-        instr->vp_confident = (pred == oracle_val);
-    } else {
-        uint64_t chosen_conf = use_stride ? entry.stride_conf : entry.lv_conf;
-        instr->vp_confident = (chosen_conf == conf_max);
+        instr->vp_confident = (oracle_valid && (pred == oracle_val));
+    }
+    else {
+        instr->vp_confident = (entry.confidence == conf_max);
     }
 }
 
@@ -264,59 +262,49 @@ vpq_entry SVP_VPQ::vpq_pop_head() {
 
 
 // If SVP tag hit, train SVP entry, use value, decrement instance counter
-void SVP_VPQ::train_svp(uint64_t value, uint64_t index) {
+void SVP_VPQ::train_svp(uint64_t value, uint64_t index){
     assert(index < SVP.size());
 
+    // Entry in SVP indexed by PC_index
     auto &entry = SVP[index];
 
-    int64_t old_ret_val = (int64_t)entry.ret_val;
-    int64_t new_stride  = (int64_t)value - old_ret_val;
+    // Calculate new delta (stride)
+    int64_t new_stride = (int64_t)(value - entry.ret_val);
 
-    //
-    // Train stride predictor
+    // Update confidence based on if new delta is the same as the last
     if (new_stride == entry.stride) {
-        if (entry.stride_conf < conf_max) {
-            entry.stride_conf++;
+        // If delta matches, increment confidence (saturate at max)
+        if (entry.confidence < conf_max) {
+            entry.confidence++;
         }
     } else {
+        // Stride mismatch, reset confidence and update stride
         entry.stride = new_stride;
-        entry.stride_conf = 0;
+        entry.confidence = 0;
+        entry.valid = true;
     }
 
- 
-    // Train last-value predictor
-    if ((int64_t)value == old_ret_val) {
-        if (entry.lv_conf < conf_max) {
-            entry.lv_conf++;
-        }
-    } else {
-        entry.lv_conf = 0;
-    }
-
-    entry.valid = true;
-    entry.ret_val = value;
-
-    if (entry.inst > 0) {
-        entry.inst--;
-    }
+    // Update retired value and decrement the instance counter
+    entry.ret_val = (int64_t)value;
+    
+    if (entry.inst > 0) entry.inst--;
 }
+
 // If SVP tag miss, replace entry
-void SVP_VPQ::install_svp(uint64_t tag, uint64_t value, uint64_t index) {
+void SVP_VPQ::install_svp(uint64_t tag, uint64_t value, uint64_t index){
+    // Entry in SVP indexed by PC_index
     auto &entry = SVP[index];
 
+    // Safety assert to ensure actually misses
     assert(!entry.valid || tag != entry.tag);
 
+    // Overwrite entry with new tag and value
     entry.valid = true;
     entry.tag = tag;
-
     entry.ret_val = value;
-
-    //initialization
-    entry.stride = 0;
-    entry.stride_conf = 0;
-    entry.lv_conf = 0;
-
-    entry.inst = walk_VPQ(index, tag);
+    entry.stride = value;                  // from spec
+    entry.confidence = 0;
+    entry.inst = walk_VPQ(index, tag);     // walk VPQ head to tail
 }
 
 // Helper function for VPQ rollback
