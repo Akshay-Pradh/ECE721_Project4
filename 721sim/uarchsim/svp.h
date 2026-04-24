@@ -8,7 +8,8 @@
 typedef struct svp_entry {
     bool valid;
     uint64_t tag;
-    uint64_t confidence;
+    uint64_t stride_conf;
+    uint64_t lv_conf;
     uint64_t ret_val;
     int64_t stride;
     int64_t inst;
