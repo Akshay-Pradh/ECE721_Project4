@@ -1,12 +1,15 @@
 #include <inttypes.h>
+#include <assert.h>
 #include <stdio.h>
 #include <vector>
+#include "parameters.h"
 #include "payload.h"
 
 typedef struct svp_entry {
     bool valid;
     uint64_t tag;
-    uint64_t confidence;
+    uint64_t stride_conf;
+    uint64_t lv_conf;
     uint64_t ret_val;
     int64_t stride;
     int64_t inst;
@@ -37,9 +40,31 @@ private:
     uint64_t tag_bits;
     uint64_t index_bits;
 
+    // Statistics variables
+    uint64_t vpmeas_ineligible;
+    uint64_t vpmeas_eligible;
+    uint64_t vpmeas_miss;
+    uint64_t vpmeas_conf_corr;
+    uint64_t vpmeas_conf_incorr;
+    uint64_t vpmeas_unconf_corr;
+    uint64_t vpmeas_unconf_incorr;
+
 public:
     // constructor
     SVP_VPQ(uint64_t vpq_size, uint64_t index_bits, uint64_t tag_bits, uint64_t conf);
+    
+    // Dump SVP VPQ config + cost accounting data
+    void svp_vpq_config(FILE *fp);
+
+    // Dump SVP VPQ run stats:
+    // vpmeas_ineligible, vpmeas_eligible
+    // vpmeas_miss, vpmeas_conf_corr, vpmeas_conf_incorr, vpmeas_unconf_corr, vpmeas_unconf_incorr
+    void svp_vpq_stats(FILE *fp, uint64_t commit_count);
+
+    // Helper function for svp_vpq_config function
+    uint64_t bits_to_encode(uint64_t n);
+
+    void inc_counters(const payload_t *pay);
 
     // Return index from PC 
     uint64_t get_index(uint64_t PC);
@@ -63,7 +88,7 @@ public:
     bool search_svp(uint64_t PC_index, uint64_t tag);
     
     // Generate value prediction and confidence if hit in SVP
-    void svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, int64_t oracle_val);
+    void svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, bool oracle_valid, int64_t oracle_val);
 
     // Allocate entry in VPQ, returns entry number
     uint64_t vpq_allocate(uint64_t index, uint64_t tag, uint64_t branch_mask);
@@ -88,5 +113,4 @@ public:
 
     // Flash clear instances in SVP and VPQ
     void flash_clear();
-
 };
