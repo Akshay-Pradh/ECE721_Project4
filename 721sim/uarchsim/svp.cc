@@ -198,8 +198,8 @@ vpq_entry SVP_VPQ::vpq_index_head() {
 
 // Search SVP function, if tag match
 bool SVP_VPQ::search_svp(uint64_t PC_index, uint64_t tag) {
-    if (!SVP[PC_index].valid) return false;
-    return ((tag_bits == 0) || (SVP[PC_index].tag == tag));
+    if (tag_bits == 0) return true;
+    return ((SVP[PC_index].valid) && (SVP[PC_index].tag == tag));
 }
 
 // Generate value prediction if hit in SVP
