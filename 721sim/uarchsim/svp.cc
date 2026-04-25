@@ -1,4 +1,5 @@
 #include "svp.h"
+#include <cmath>
 
 // Constructor definition
 SVP_VPQ::SVP_VPQ(uint64_t vpq_size, uint64_t index_bits, uint64_t tag_bits, uint64_t conf) 
@@ -240,7 +241,14 @@ void SVP_VPQ::svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, bool o
     } else {
         if (VP_HYBRID) {
             uint64_t chosen_conf = use_stride ? entry.stride_conf : entry.lv_conf;
-            instr->vp_confident = (chosen_conf == conf_max);
+            if (chosen_conf == entry.stride_conf) {
+                instr->vp_confident = (chosen_conf == conf_max);
+            }
+            else {
+                // Last Value predictor uses a percentage of conf_max for it's confidence
+                instr->vp_confident = (chosen_conf == std::trunc(0.75 * conf_max));
+            }
+            
         }
         else {
             instr->vp_confident = (entry.stride_conf == conf_max);
@@ -307,7 +315,8 @@ void SVP_VPQ::train_svp(uint64_t value, uint64_t index) {
     // Train last-value predictor
     if (VP_HYBRID) {
         if ((int64_t)value == old_ret_val) {
-            if (entry.lv_conf < conf_max) {
+            // Last Value predictor uses a percentage of conf_max for it's confidence
+            if (entry.lv_conf < std::trunc(0.75* conf_max)) {
                 entry.lv_conf++;
             }
         } 
