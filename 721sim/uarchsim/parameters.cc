@@ -16,6 +16,7 @@ bool PERFECT_DCACHE = false;
 // Value Prediction.
 bool VP_PERFECT = false;
 bool VP_SVP = false;
+bool VP_HYBRID = false;
 bool VP_ELIGIBLE_SPECIFIED = false;
 bool predINTALU = false;           // predict integer ALU instructions
 bool predFPALU = false;            // predict floating-point ALU instructions

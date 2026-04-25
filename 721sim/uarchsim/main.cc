@@ -267,17 +267,39 @@ static void set_vp_svp(const char *config) {
    }
 }
 
+// Parser function for SVP + VPQ
+static void set_vp_hybrid(const char *config) {
+   uint64_t vpq_size, oracleconf, index_bits, tag_bits, confmax;
+
+   if (sscanf(config, "%lu,%lu,%lu,%lu,%lu",
+              &vpq_size, &oracleconf, &index_bits, &tag_bits, &confmax) != 5) {
+      fprintf(stderr, "Incorrect usage of --vp-hybrid=<VPQsize>,<oracleconf>,<#index bits>,<#tag bits>,<confmax>\n");
+      exit(-1);
+   }
+   else {
+      VPQ_SIZE = vpq_size;
+      ORACLE_CONF = (oracleconf ? true : false);
+      SVP_INDEX_BITS = index_bits;
+      SVP_TAG_BITS = tag_bits;
+      SVP_CONF_MAX = confmax;
+      VP_SVP = true;
+      VP_HYBRID = true;
+   }
+}
+
 // Function to validate VP configuration
 static void validate_vp_config() {
    unsigned int vp_predictor_count = 0;
 
    vp_predictor_count += (VP_PERFECT ? 1 : 0);
-   vp_predictor_count += (VP_SVP ? 1 : 0);
+   vp_predictor_count += ((VP_SVP && !VP_HYBRID) ? 1 : 0);
+   vp_predictor_count += (VP_HYBRID ? 1 : 0);
+
 
    if (vp_predictor_count > 1) {
       fprintf(stderr, "Incorrect usage:\n");
       fprintf(stderr, "Specify one and only one value predictor.\n");
-      fprintf(stderr, "Supported value predictors currently are --vp-perf=1 and --vp-svp=<VPQsize>,<oracleconf>,<#index bits>,<#tag bits>,<confmax>\n");
+      fprintf(stderr, "Supported value predictors currently are --vp-perf=1, --vp-svp=<VPQsize>,<oracleconf>,<#index bits>,<#tag bits>,<confmax>, and --vp-hybrid=<VPQsize>,<oracleconf>,<#index bits>,<#tag bits>,<confmax>\n");
       exit(-1);
    }
 
@@ -292,6 +314,7 @@ static void validate_vp_config() {
       predFPALU = false;
       predLOAD = false;
       ORACLE_CONF = false;
+      VP_HYBRID = false;
    }
 }
 
@@ -490,6 +513,7 @@ int main(int argc, char **argv) {
    parser.option(0, "vp-eligible", 1, [&](const char *s) { set_vp_eligible(s); });
    parser.option(0, "vp-svp", 1, [&](const char *s) { set_vp_svp(s); });
    parser.option(0, "vp-perf", 1, [&](const char *s) { VP_PERFECT = (atoi(s) ? true : false); });
+   parser.option(0, "vp-hybrid", 1, [&](const char *s) { set_vp_hybrid(s); });
 
    parser.option(0, "cp", 1, [&](const char *s) { NUM_CHECKPOINTS = atoi(s); });
 

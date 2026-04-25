@@ -17,6 +17,7 @@ extern bool PERFECT_DCACHE;
 // Value Prediction Configuration
 extern bool VP_PERFECT;
 extern bool VP_SVP;
+extern bool VP_HYBRID;
 extern bool VP_ELIGIBLE_SPECIFIED;
 extern bool predINTALU;           // predict integer ALU instructions
 extern bool predFPALU;            // predict floating-point ALU instructions

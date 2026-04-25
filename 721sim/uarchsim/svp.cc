@@ -6,13 +6,14 @@ SVP_VPQ::SVP_VPQ(uint64_t vpq_size, uint64_t index_bits, uint64_t tag_bits, uint
       conf_max{conf}, index_bits{index_bits} {
         // Initialize all SVP entries
         for (auto &entry: SVP) {
-            entry.valid = false;
-            entry.tag = 0;
-            entry.confidence = 0;
-            entry.ret_val = 0;
-            entry.stride = 0;
-            entry.inst = 0;
-        }
+        entry.valid = false;
+        entry.tag = 0;
+        entry.stride_conf = 0;
+        entry.ret_val = 0;
+        entry.stride = 0;
+        entry.lv_conf = 0;
+        entry.inst = 0;
+}
 
         // Initialize all VPQ entries
         for (auto &entry: VPQ) {
@@ -44,7 +45,8 @@ void SVP_VPQ::svp_vpq_config(FILE *fp) {
         fprintf(fp, "\nVALUE PREDICTOR = perfect\n");
     }
     else if (VP_SVP) {
-        fprintf(fp, "\nVALUE PREDICTOR = stride (Project 4 spec. implementation)\n");
+        if (VP_HYBRID) (fprintf(fp, "\nVALUE PREDICTOR = stride + last value hybrid \n"));
+        else fprintf(fp, "\nVALUE PREDICTOR = stride (Project 4 spec. implementation)\n");
         fprintf(fp, "   VPQsize         = %u\n", VPQ.size());
         fprintf(fp, "   oracleconf      = %d (%s confidence)\n",
                 (ORACLE_CONF ? 1 : 0),
@@ -63,13 +65,25 @@ void SVP_VPQ::svp_vpq_config(FILE *fp) {
         uint64_t num_svp_entries = (1ULL << index_bits);
         uint64_t conf_bits = bits_to_encode(conf_max + 1);
         uint64_t instance_bits = bits_to_encode((uint64_t)VPQ.size());
-        uint64_t bits_per_entry = tag_bits + conf_bits + 64 + 64 + instance_bits;
+        uint64_t bits_per_entry;
+        if (VP_HYBRID) {
+            bits_per_entry = tag_bits + 2 * conf_bits + 64 + 64 + instance_bits;
+        }
+        else {
+            bits_per_entry = tag_bits + conf_bits + 64 + 64 + instance_bits;
+        }
         uint64_t total_bits = num_svp_entries * bits_per_entry;
         double total_bytes = (double)total_bits / 8.0;
 
         fprintf(fp, "   One SVP entry:\n");
         fprintf(fp, "      tag           : %3u bits  // num_tag_bits\n", tag_bits);
-        fprintf(fp, "      conf          : %3" PRIu64 " bits  // formula: (uint64_t)ceil(log2((double)(confmax+1)))\n", conf_bits);
+        if (VP_HYBRID) {
+            fprintf(fp, "      stride_conf          : %3" PRIu64 " bits  // formula: (uint64_t)ceil(log2((double)(confmax+1)))\n", conf_bits);
+            fprintf(fp, "      last_value_conf      : %3" PRIu64 " bits  // formula: (uint64_t)ceil(log2((double)(confmax+1)))\n", conf_bits);
+        }
+        else {
+            fprintf(fp, "      conf          : %3" PRIu64 " bits  // formula: (uint64_t)ceil(log2((double)(confmax+1)))\n", conf_bits);
+        }
         fprintf(fp, "      retired_value :  64 bits  // RISCV64 integer size.\n");
         fprintf(fp, "      stride        :  64 bits  // RISCV64 integer size. Competition opportunity: truncate stride to far fewer bits based on stride distribution of stride-predictable instructions.\n");
         fprintf(fp, "      instance ctr  : %3" PRIu64 " bits  // formula: (uint64_t)ceil(log2((double)VPQsize))\n", instance_bits);
@@ -206,22 +220,31 @@ bool SVP_VPQ::search_svp(uint64_t PC_index, uint64_t tag) {
 void SVP_VPQ::svp_hit(payload_t* instr, uint64_t index, bool oracle_mode, bool oracle_valid, int64_t oracle_val) {
     auto &entry = SVP[index];
 
-    // Increment instance count
+    // Count this newly-renamed dynamic instance
     entry.inst++;
-    
-    // Prediction generation
-    int64_t pred = entry.ret_val + entry.inst * entry.stride;
 
-    // Update dynamic instr 
+    int64_t stride_pred = (int64_t)entry.ret_val + entry.inst * entry.stride;
+    int64_t lv_pred     = (int64_t)entry.ret_val;
+
+    bool use_stride;
+    if (VP_HYBRID) use_stride = (entry.stride_conf >= entry.lv_conf);
+    else use_stride = true;
+
+    int64_t pred    = use_stride ? stride_pred : lv_pred;
+
     instr->vp_value = pred;
     instr->vp_predicted = true;
-    
-    // Oracle mode vs Normal Mode (+ recovery)
+
     if (oracle_mode) {
-        instr->vp_confident = (oracle_valid && (pred == oracle_val));
-    }
-    else {
-        instr->vp_confident = (entry.confidence == conf_max);
+        instr->vp_confident = (oracle_valid && pred == oracle_val);
+    } else {
+        if (VP_HYBRID) {
+            uint64_t chosen_conf = use_stride ? entry.stride_conf : entry.lv_conf;
+            instr->vp_confident = (chosen_conf == conf_max);
+        }
+        else {
+            instr->vp_confident = (entry.stride_conf == conf_max);
+        }
     }
 }
 
@@ -262,49 +285,62 @@ vpq_entry SVP_VPQ::vpq_pop_head() {
 
 
 // If SVP tag hit, train SVP entry, use value, decrement instance counter
-void SVP_VPQ::train_svp(uint64_t value, uint64_t index){
+void SVP_VPQ::train_svp(uint64_t value, uint64_t index) {
     assert(index < SVP.size());
 
-    // Entry in SVP indexed by PC_index
     auto &entry = SVP[index];
 
-    // Calculate new delta (stride)
-    int64_t new_stride = (int64_t)(value - entry.ret_val);
+    int64_t old_ret_val = (int64_t)entry.ret_val;
+    int64_t new_stride  = (int64_t)value - old_ret_val;
 
-    // Update confidence based on if new delta is the same as the last
+    // Train stride predictor
     if (new_stride == entry.stride) {
-        // If delta matches, increment confidence (saturate at max)
-        if (entry.confidence < conf_max) {
-            entry.confidence++;
+        if (entry.stride_conf < conf_max) {
+            entry.stride_conf++;
         }
     } else {
-        // Stride mismatch, reset confidence and update stride
         entry.stride = new_stride;
-        entry.confidence = 0;
-        entry.valid = true;
+        entry.stride_conf = 0;
     }
 
-    // Update retired value and decrement the instance counter
-    entry.ret_val = (int64_t)value;
-    
-    if (entry.inst > 0) entry.inst--;
-}
+ 
+    // Train last-value predictor
+    if (VP_HYBRID) {
+        if ((int64_t)value == old_ret_val) {
+            if (entry.lv_conf < conf_max) {
+                entry.lv_conf++;
+            }
+        } 
+        else {
+            entry.lv_conf = 0;
+        }
+    }
 
+
+    entry.valid = true;
+    entry.ret_val = value;
+
+    if (entry.inst > 0) {
+        entry.inst--;
+    }
+}
 // If SVP tag miss, replace entry
-void SVP_VPQ::install_svp(uint64_t tag, uint64_t value, uint64_t index){
-    // Entry in SVP indexed by PC_index
+void SVP_VPQ::install_svp(uint64_t tag, uint64_t value, uint64_t index) {
     auto &entry = SVP[index];
 
-    // Safety assert to ensure actually misses
     assert(!entry.valid || tag != entry.tag);
 
-    // Overwrite entry with new tag and value
     entry.valid = true;
     entry.tag = tag;
+
     entry.ret_val = value;
-    entry.stride = value;                  // from spec
-    entry.confidence = 0;
-    entry.inst = walk_VPQ(index, tag);     // walk VPQ head to tail
+
+    // Initialization
+    entry.stride = value;
+    entry.stride_conf = 0;
+    entry.lv_conf = 0;
+
+    entry.inst = walk_VPQ(index, tag);
 }
 
 // Helper function for VPQ rollback
